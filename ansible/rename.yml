@@ -1,0 +1,37 @@
+- hosts: all
+  gather_facts: no
+  collections:
+    - community.general
+
+  remote_user: root
+  become: yes
+  become_user: root
+  become_method: sudo
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+   - name: Waits for SSH to become available
+     wait_for:
+       host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+       port: 22
+       delay: 10
+       timeout: 300
+       search_regex: OpenSSH
+     connection: local
+
+   - name: gather facts
+     setup:
+
+   - name: Show ansible remote name
+     debug:
+       msg: "{{ inventory_hostname_short }}"
+
+   
+   - name: Set hostname depending of inventory
+     ansible.builtin.hostname:
+       name: "{{ inventory_hostname_short }}" 
+       use: systemd
+      
+   - name: Reboot after changing hostname 
+     reboot:
+       reboot_timeout: 300

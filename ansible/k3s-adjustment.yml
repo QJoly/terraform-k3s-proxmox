@@ -1,0 +1,51 @@
+- hosts: master 
+  gather_facts: no
+  collections:
+    - community.general
+
+  remote_user: root
+  become: yes
+  become_user: root
+  become_method: sudo
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+   - name: Waits for SSH to become available
+     wait_for:
+       host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+       port: 22
+       delay: 10
+       timeout: 300
+       search_regex: OpenSSH
+     connection: local
+
+   - name: gather facts
+     setup:
+ 
+   - name: Installing Arkade
+     shell: "curl -sLS https://get.arkade.dev | sudo sh"
+
+   - name: Installing HELM 
+     shell: "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"
+
+   - name: Adding betnami repo on helm
+     shell: "helm repo add bitnami https://charts.bitnami.com/bitnami"
+
+   - name: Adding HELM completion
+     lineinfile:
+       path: "~/.bashrc"
+       line: "source <(helm completion bash)"
+       state: present
+
+   - name: Adding kubectl completion
+     lineinfile:
+       path: "~/.bashrc"
+       line: "source <(kubectl completion bash)"
+       state: present
+ 
+   - name: Changing path
+     lineinfile:
+       path: "~/.bashrc"
+       line: "export PATH=$HOME/.arkade/bin:$PATH"
+       state: present
+

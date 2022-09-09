@@ -1,0 +1,68 @@
+- hosts: all
+  gather_facts: no
+  collections:
+    - community.general
+
+  remote_user: root
+  become: yes
+  become_user: root
+  become_method: sudo
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+   - name: Waits for SSH to become available
+     wait_for:
+       host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+       port: 22
+       delay: 10
+       timeout: 300
+       search_regex: OpenSSH
+     connection: local
+
+   - name: gather facts
+     setup:
+
+   - name: Install Parted
+     community.general.apk:
+        name:
+          - parted
+        state: present
+     when: ansible_facts['os_family'] == "Alpine"
+
+   - name: Extend last existing partition to fill all available space
+     parted:
+        device: /dev/vda
+        number: "2"
+        part_end: "100%"
+        resize: true
+        state: present
+
+   - name: resize the volume group /dev/vda2 to the maximum possible
+     lvg:
+        vg: vg0
+        pvs: /dev/vda2
+        pvresize: yes
+     when: ansible_facts['os_family'] == "Alpine"
+
+   - name: Extend the logical volume Root to take all remaining space of the PVs and resize the underlying filesystem
+     lvol:
+        vg: vg0
+        lv: root
+        size: +100%FREE
+        resizefs: true
+     when: ansible_facts['os_family'] == "Alpine"
+
+   - name: resize the volume group /dev/vda2 to the maximum possible
+     lvg:
+        vg: vg00
+        pvs: /dev/vda2
+        pvresize: yes
+     when: ansible_facts['os_family'] == "Debian"
+
+   - name: Extend the logical volume Root to take all remaining space of the PVs and resize the underlying filesystem
+     lvol:
+        vg: vg00
+        lv: root
+        size: +100%FREE
+        resizefs: true
+     when: ansible_facts['os_family'] == "Debian"
