@@ -65,7 +65,7 @@ _EOF
 
 }
 
-resource "local_file" "inventory" {
+resource "local_file" "inventory-k3s-ansible" {
 
     filename = "./ansible/k3s-ansible/inventory/sample/hosts.ini"
 
@@ -101,7 +101,7 @@ resource "null_resource" "playbooks"{
 }
 
 resource "null_resource" "install_k3s"{
- depends_on = [module.node,module.master,local_file.inventory,null_resource.playbooks]
+ depends_on = [module.node,module.master,local_file.inventory-k3s-ansible,null_resource.playbooks]
 
  provisioner "local-exec" {
     when    = create
